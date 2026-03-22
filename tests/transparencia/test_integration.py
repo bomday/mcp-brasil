@@ -45,6 +45,26 @@ class TestToolsRegistered:
                 assert tool.description, f"Tool {tool.name} has no description"
 
 
+class TestResourcesRegistered:
+    @pytest.mark.asyncio
+    async def test_all_3_resources_registered(self) -> None:
+        async with Client(mcp) as c:
+            resources = await c.list_resources()
+            uris = {str(r.uri) for r in resources}
+            expected = {"data://endpoints", "data://bases-sancoes", "data://info-api"}
+            assert expected.issubset(uris), f"Missing: {expected - uris}"
+
+
+class TestPromptsRegistered:
+    @pytest.mark.asyncio
+    async def test_all_3_prompts_registered(self) -> None:
+        async with Client(mcp) as c:
+            prompts = await c.list_prompts()
+            names = {p.name for p in prompts}
+            expected = {"auditoria_fornecedor", "analise_despesas", "verificacao_compliance"}
+            assert expected.issubset(names), f"Missing: {expected - names}"
+
+
 class TestToolExecution:
     @pytest.mark.asyncio
     async def test_buscar_contratos_e2e(self) -> None:
