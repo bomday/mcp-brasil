@@ -9,7 +9,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/jxnxts/mcp-brasil/ci.yml)](https://github.com/jxnxts/mcp-brasil/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-205 tools · 58 resources · 47 prompts
+204 tools · 58 resources · 47 prompts
 
 Conecte AI agents (Claude, GPT, Copilot, etc.) a dados governamentais do Brasil — economia, legislação, transparência, judiciário, eleições, meio ambiente, saúde e mais.
 
@@ -23,10 +23,10 @@ Conecte AI agents (Claude, GPT, Copilot, etc.) a dados governamentais do Brasil 
 
 ## Features
 
-- **205 tools** em 27 features — econômico, legislativo, transparência, judiciário, eleitoral, ambiental, saúde, compras públicas
+- **204 tools** em 27 features — econômico, legislativo, transparência, judiciário, eleitoral, ambiental, saúde, compras públicas
 - **Cross-referencing** com `planejar_consulta` — cria planos de execução combinando múltiplas APIs (ex: gastos de um deputado + votações + proposições)
 - **Execução em lote** com `executar_lote` — dispara consultas em paralelo numa única chamada
-- **Smart discovery** — BM25 search transform filtra 205 tools para só mostrar as relevantes ao contexto
+- **Smart discovery** — BM25 search transform filtra 204 tools para só mostrar as relevantes ao contexto
 - **Auto-registry** — adicionar uma feature é criar uma pasta; zero configuração manual
 - **Async everywhere** — httpx async + Pydantic v2 + rate limiting com backoff
 
@@ -177,7 +177,7 @@ DATAJUD_API_KEY=sua-chave
 |--------|-----------|
 | [Quick Start](docs/guide/quickstart.md) | Instalação e configuração em 2 minutos |
 | [Arquitetura](docs/concepts/architecture.md) | Como o projeto funciona por dentro |
-| [Catálogo de Features](docs/reference/features.md) | Todas as 27 features e suas 205 tools |
+| [Catálogo de Features](docs/reference/features.md) | Todas as 27 features e suas 204 tools |
 | [Smart Tools](docs/reference/smart-tools.md) | Meta-tools: planner, batch, discovery |
 | [Adicionando Features](docs/guide/adding-features.md) | Guia para contribuir com novas APIs |
 | [Configuração](docs/reference/configuration.md) | Variáveis de ambiente e opções |
