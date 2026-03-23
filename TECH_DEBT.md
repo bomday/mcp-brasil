@@ -96,6 +96,8 @@
 
 - [x] **Limited to 3 tools** — Resolvido. Adicionadas `consultar_fornecedor`, `buscar_itens`, `consultar_orgao`. Feature agora tem 6 tools. CEIS/CNEP coberto por transparência. Comprasnet deferred.
 - [ ] **PNCP API response format unverified** — Response parsing uses `data.resultado` fallback. Real API response shape needs validation against live PNCP endpoint. Agora 6 endpoints para validar.
+- [x] **ComprasNet Legacy descontinuado** — API original `compras.dados.gov.br` retorna 404 (descontinuada). O substituto `dadosabertos.compras.gov.br` já está implementado em `compras/dadosabertos/` com 8 tools (licitações, pregões, dispensas, contratos, fornecedores, CATMAT, CATSER, UASGs).
+- [x] **Contratos.gov.br descontinuado** — API `contratos.comprasnet.gov.br/api` retorna 404 (deprecada). Funcionalidade coberta por `compras/dadosabertos/buscar_contratos` e `compras/pncp/`.
 
 ## TransfereGov Feature
 
@@ -143,6 +145,24 @@
 - [x] **CodeMode experimental** — Opt-in via `MCP_BRASIL_TOOL_SEARCH=code_mode`. Uses Search + GetTags + GetSchemas + execute sandbox. Requires `fastmcp[code-mode]` extra.
 - [ ] **BM25 may not index tags** — BM25SearchTransform searches tool names, descriptions, and parameter names but may not directly index tags. Tags are useful for CodeMode's GetTags discovery tool.
 - [ ] **recomendar_tools catalog uses private API** — `build_catalog()` accesses `server._tool_manager._tools` which is a private FastMCP internal. May break on FastMCP upgrades.
+
+## TCE Features (NOVO — 9 features)
+
+- [x] **TCE-RJ** — 7 tools. API `dados.tcerj.tc.br/api/v1/`. Resposta wrappada em `{"Licitacoes": [...], "Count": N}` etc. Sem auth.
+- [x] **TCE-SP** — 3 tools. API `transparencia.tce.sp.gov.br/api/json/`. Valores monetários como strings no formato BR (`"5.034,11"`). Parsing requer strip de pontos e troca de vírgula por ponto. Dados de 2014 até presente.
+- [x] **TCE-CE** — 4 tools. API `api-dados-abertos.tce.ce.gov.br/`. Duas patterns de resposta (array simples vs paginado com `length/total/data`). Precisa append `"00"` ao ano para `exercicio_orcamento`.
+- [x] **TCE-PE** — 5 tools. API `sistemas.tce.pe.gov.br/DadosAbertos/`. URL com `!json` separator. Encoding ISO-8859-1 (não UTF-8). Hard limit de 100k registros sem paginação.
+- [x] **TCE-RS** — 5 tools. Portal CKAN `dados.tce.rs.gov.br`. DataStore NÃO habilitado — dados via download de JSON bulk. Datasets grandes (100s MB) não são práticos; implementação foca em datasets pequenos (educação, saúde, fiscal, municípios).
+- [x] **TCE-SC** — 2 tools. Apenas 2 endpoints abertos (`municipios`, `unidades-gestoras`). API real (e-Sfinge) requer auth institucional.
+- [x] **TCE-RN** — 5 tools. API `apidadosabertos.tce.rn.gov.br/api/`. Todos parâmetros são path params (não query params). Formato controlado por segmento `Json`/`Csv` no path.
+- [x] **TCE-TO** — 3 tools. API `api.tceto.tc.br/econtas/api`. Requer header `Accept: application/json`. Endpoint `/decisoes` retorna 501 (broken). Paginação do `/pautas` ignorada pela API (retorna mesmos dados em todas as páginas).
+- [x] **TCE-PI** — 5 tools. API `sistemas.tce.pi.gov.br/api/portaldacidadania/`. Docs JS-rendered (endpoints extraídos do bundle JS). ~48 endpoints disponíveis. Implementação foca em prefeituras, despesas, receitas, órgãos.
+- [ ] **TCE-TO /decisoes broken** — Endpoint retorna 501 "Falha interna". Não implementado. Monitorar se volta a funcionar.
+- [ ] **TCE-TO /pautas ignora paginação** — Parâmetro `pagina` é aceito mas não produz efeito (retorna mesmos dados). Documentado no client mas pode confundir usuários.
+- [ ] **TCE-SC API extremamente limitada** — Apenas 2 endpoints públicos (municipios e unidades gestoras). A API real do e-Sfinge requer credenciais institucionais. Feature é minimal por design.
+- [ ] **TCE-RS sem DataStore** — Portal CKAN não tem DataStore habilitado, impossibilitando queries SQL via API. Dados acessíveis apenas via download de arquivos JSON completos.
+- [ ] **TCE-PE encoding ISO-8859-1** — Respostas da API usam ISO-8859-1, não UTF-8. O `http_get()` padrão assume UTF-8. Se caracteres acentuados aparecerem corrompidos, o client precisa decodificar explicitamente.
+- [ ] **APIs de TCEs não verificadas periodicamente** — 9 APIs de TCEs estaduais implementadas. Endpoints podem mudar sem aviso. Não há health check automatizado.
 
 ## Known Limitations
 
