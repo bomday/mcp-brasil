@@ -138,3 +138,82 @@ async def http_get(
                     continue
 
     raise HttpClientError(f"Request to {url} failed after {retries + 1} attempts") from last_error
+
+
+async def http_post(
+    url: str,
+    *,
+    json_body: Any | None = None,
+    params: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
+    timeout: float | None = None,
+    max_retries: int | None = None,
+) -> Any:
+    """Make a POST request with retry + exponential backoff.
+
+    Retries on: HTTP 429/5xx, timeouts, and connection errors.
+
+    Args:
+        url: Full URL to request.
+        json_body: JSON body to send.
+        params: Query parameters.
+        headers: Extra headers (merged with defaults).
+        timeout: Request timeout in seconds.
+        max_retries: Max retry attempts. Default: settings.HTTP_MAX_RETRIES.
+
+    Returns:
+        Parsed JSON response.
+
+    Raises:
+        HttpClientError: On non-retryable errors or exhausted retries.
+    """
+    retries = max_retries if max_retries is not None else HTTP_MAX_RETRIES
+    last_error: Exception | None = None
+
+    async with create_client(timeout=timeout, headers=headers) as client:
+        for attempt in range(retries + 1):
+            try:
+                response = await client.post(url, json=json_body, params=params)
+
+                if response.status_code in _RETRYABLE_STATUS_CODES:
+                    if attempt < retries:
+                        wait = HTTP_BACKOFF_BASE * (2**attempt)
+                        logger.warning(
+                            "Retry %d/%d for %s (HTTP %d), waiting %.1fs",
+                            attempt + 1,
+                            retries,
+                            url,
+                            response.status_code,
+                            wait,
+                        )
+                        await asyncio.sleep(wait)
+                        continue
+                    raise HttpClientError(
+                        f"Request to {url} failed after {retries + 1} attempts "
+                        f"(last: HTTP {response.status_code})"
+                    )
+
+                response.raise_for_status()
+                return response.json()
+
+            except httpx.HTTPStatusError as exc:
+                raise HttpClientError(
+                    f"HTTP {exc.response.status_code} from {url}: {exc.response.text[:200]}"
+                ) from exc
+
+            except (httpx.TimeoutException, httpx.ConnectError) as exc:
+                last_error = exc
+                if attempt < retries:
+                    wait = HTTP_BACKOFF_BASE * (2**attempt)
+                    logger.warning(
+                        "Request to %s failed (attempt %d/%d): %s, waiting %.1fs",
+                        url,
+                        attempt + 1,
+                        retries,
+                        type(exc).__name__,
+                        wait,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+
+    raise HttpClientError(f"Request to {url} failed after {retries + 1} attempts") from last_error

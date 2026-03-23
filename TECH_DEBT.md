@@ -67,7 +67,9 @@
 - [x] **Nested response shapes** — Candidatos endpoint wraps results in `{"candidatos": [...]}`, cargos in `{"cargos": [...]}`. Handled by extracting nested fields.
 - [ ] **API is unofficial** — DivulgaCandContas API is reverse-engineered. No official documentation. Endpoints may change without notice.
 - [x] **No result totalization** — Resolvido. Adicionada tool `resultado_eleicao` que rankeia candidatos por votos. `buscar_candidato` enriquecido com `descricao_totalizacao` e `total_votos`. Novo modelo `ResultadoCandidato`. 47 testes passam.
-- [ ] **Sem dados de votação por município para eleições federais** — A API DivulgaCandContas do TSE não retorna resultados de votação desagregados por município para cargos federais (presidente, senador, deputado federal). Dados de totalização por município exigem outra fonte (ex: TSE Resultados Web ou dados abertos em CSV).
+- [x] **Sem dados de votação por município** — Resolvido para eleições municipais. Adicionadas `listar_municipios_eleitorais` e `resultado_por_municipio` (CDN formato `-u.json`). Disponível para 2024 (prefeito, vereador).
+- [ ] **CDN não tem dados por município para eleições federais** — O CDN do TSE (`resultados.tse.jus.br`) não disponibiliza dados de votação por município para eleições federais (2022 — presidente, governador, senador). URLs `dados/{uf}/{uf}{cod}-c{cargo}-e{eleicao}-u.json` retornam 404 para eleições federais.
+- [x] **CDN paths com election code padded causavam 404** — URLs usavam `/000544/` (padded) no path quando o CDN exige `/544/` (unpadded). Padded é usado apenas no filename (`e000544`). Corrigido `ELEICOES_CDN` para armazenar 3 valores `(ciclo, padded, unpadded)`.
 
 ## Jurisprudência Feature
 
