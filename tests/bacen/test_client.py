@@ -212,3 +212,85 @@ class TestBuscarIndicadoresAtuais:
         result = await client.buscar_indicadores_atuais()
         assert len(result) == 5
         assert all("erro" in r for r in result)
+
+
+# ---------------------------------------------------------------------------
+# buscar_expectativas_focus
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarExpectativasFocus:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_expectations(self) -> None:
+        from mcp_brasil.bacen.constants import FOCUS_ENDPOINT
+
+        respx.get(FOCUS_ENDPOINT).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "value": [
+                        {
+                            "Indicador": "IPCA",
+                            "Data": "2024-03-15",
+                            "DataReferencia": "2024",
+                            "Media": 3.76,
+                            "Mediana": 3.75,
+                            "DesvioPadrao": 0.18,
+                            "Minimo": 2.50,
+                            "Maximo": 5.00,
+                            "baseCalculo": 80,
+                        },
+                        {
+                            "Indicador": "IPCA",
+                            "Data": "2024-03-08",
+                            "DataReferencia": "2024",
+                            "Media": 3.80,
+                            "Mediana": 3.78,
+                            "DesvioPadrao": 0.20,
+                            "Minimo": 2.60,
+                            "Maximo": 5.10,
+                            "baseCalculo": 75,
+                        },
+                    ]
+                },
+            )
+        )
+        result = await client.buscar_expectativas_focus(indicador="IPCA", limite=2)
+        assert len(result) == 2
+        assert result[0].indicador == "IPCA"
+        assert result[0].data == "2024-03-15"
+        assert result[0].mediana == 3.75
+        assert result[0].media == 3.76
+        assert result[0].base_calculo == 80
+        assert result[1].data == "2024-03-08"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_with_data_inicio(self) -> None:
+        from mcp_brasil.bacen.constants import FOCUS_ENDPOINT
+
+        route = respx.get(FOCUS_ENDPOINT).mock(
+            return_value=httpx.Response(200, json={"value": []})
+        )
+        await client.buscar_expectativas_focus(
+            indicador="Selic", data_inicio="2024-01-01", limite=5
+        )
+        req_url = str(route.calls[0].request.url)
+        assert "Data" in req_url and "ge" in req_url and "2024-01-01" in req_url
+
+    @pytest.mark.asyncio
+    async def test_invalid_indicator_returns_empty(self) -> None:
+        result = await client.buscar_expectativas_focus(indicador="INVALIDO")
+        assert result == []
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_non_list_value_returns_empty(self) -> None:
+        from mcp_brasil.bacen.constants import FOCUS_ENDPOINT
+
+        respx.get(FOCUS_ENDPOINT).mock(
+            return_value=httpx.Response(200, json={"value": "not a list"})
+        )
+        result = await client.buscar_expectativas_focus(indicador="IPCA")
+        assert result == []

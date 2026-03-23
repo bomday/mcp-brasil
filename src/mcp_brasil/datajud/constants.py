@@ -9,8 +9,7 @@ MAX_PAGE_SIZE = 10000
 
 # Tribunal endpoint mapping (sigla → sufixo da URL)
 TRIBUNAIS: dict[str, str] = {
-    # Tribunais Superiores
-    "stf": "stf",
+    # Tribunais Superiores (STF não está disponível no DataJud)
     "stj": "stj",
     "tst": "tst",
     "stm": "stm",
@@ -111,7 +110,6 @@ TRIBUNAIS: dict[str, str] = {
 
 # Nomes legíveis dos tribunais
 TRIBUNAL_NOMES: dict[str, str] = {
-    "stf": "Supremo Tribunal Federal",
     "stj": "Superior Tribunal de Justiça",
     "tst": "Tribunal Superior do Trabalho",
     "stm": "Superior Tribunal Militar",

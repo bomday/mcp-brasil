@@ -1,4 +1,4 @@
-"""Integration tests for the Compras feature using fastmcp.Client.
+"""Integration tests for the Dados Abertos feature using fastmcp.Client.
 
 These tests verify the full pipeline: server -> tools -> client (mocked HTTP).
 """
@@ -8,25 +8,23 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastmcp import Client
 
-from mcp_brasil.compras.schemas import Contratacao, ContratacaoResultado
-from mcp_brasil.compras.server import mcp
+from mcp_brasil.dados_abertos.schemas import ConjuntoDados, ConjuntoResultado
+from mcp_brasil.dados_abertos.server import mcp
 
-CLIENT_MODULE = "mcp_brasil.compras.client"
+CLIENT_MODULE = "mcp_brasil.dados_abertos.client"
 
 
 class TestToolsRegistered:
     @pytest.mark.asyncio
-    async def test_all_6_tools_registered(self) -> None:
+    async def test_all_4_tools_registered(self) -> None:
         async with Client(mcp) as c:
             tool_list = await c.list_tools()
             names = {t.name for t in tool_list}
             expected = {
-                "buscar_contratacoes",
-                "buscar_contratos",
-                "buscar_atas",
-                "consultar_fornecedor",
-                "buscar_itens",
-                "consultar_orgao",
+                "buscar_conjuntos",
+                "detalhar_conjunto",
+                "listar_organizacoes",
+                "buscar_recursos",
             }
             assert expected.issubset(names), f"Missing: {expected - names}"
 
@@ -44,7 +42,7 @@ class TestResourcesRegistered:
         async with Client(mcp) as c:
             resources = await c.list_resources()
             uris = {str(r.uri) for r in resources}
-            expected = {"data://modalidades"}
+            expected = {"data://formatos"}
             assert expected.issubset(uris), f"Missing: {expected - uris}"
 
 
@@ -54,46 +52,48 @@ class TestPromptsRegistered:
         async with Client(mcp) as c:
             prompts = await c.list_prompts()
             names = {p.name for p in prompts}
-            expected = {"investigar_fornecedor"}
+            expected = {"explorar_dados"}
             assert expected.issubset(names), f"Missing: {expected - names}"
 
 
 class TestToolExecution:
     @pytest.mark.asyncio
-    async def test_buscar_contratacoes_e2e(self) -> None:
-        mock_data = ContratacaoResultado(
+    async def test_buscar_conjuntos_e2e(self) -> None:
+        mock_data = ConjuntoResultado(
             total=1,
-            contratacoes=[
-                Contratacao(
-                    orgao_nome="Ministério da Educação",
-                    objeto="Aquisição de computadores",
-                    modalidade_id=1,
-                    situacao_nome="Publicada",
-                    valor_estimado=500000.0,
+            conjuntos=[
+                ConjuntoDados(
+                    id="abc-123",
+                    titulo="Dados de Saúde Pública",
+                    organizacao_nome="Ministério da Saúde",
+                    temas=["Saúde"],
+                    data_atualizacao="2024-06-20",
                 ),
             ],
         )
         with patch(
-            f"{CLIENT_MODULE}.buscar_contratacoes",
+            f"{CLIENT_MODULE}.buscar_conjuntos",
             new_callable=AsyncMock,
             return_value=mock_data,
         ):
             async with Client(mcp) as c:
                 result = await c.call_tool(
-                    "buscar_contratacoes",
-                    {"texto": "computadores"},
+                    "buscar_conjuntos",
+                    {"texto": "saúde"},
                 )
-                assert "Aquisição de computadores" in result.data
-                assert "Ministério da Educação" in result.data
+                assert "Dados de Saúde Pública" in result.data
+                assert "Ministério da Saúde" in result.data
 
     @pytest.mark.asyncio
-    async def test_buscar_contratos_no_filter(self) -> None:
-        async with Client(mcp) as c:
-            result = await c.call_tool("buscar_contratos", {})
-            assert "Informe pelo menos um filtro" in result.data
-
-    @pytest.mark.asyncio
-    async def test_buscar_atas_no_filter(self) -> None:
-        async with Client(mcp) as c:
-            result = await c.call_tool("buscar_atas", {})
-            assert "Informe pelo menos um filtro" in result.data
+    async def test_detalhar_conjunto_not_found(self) -> None:
+        with patch(
+            f"{CLIENT_MODULE}.detalhar_conjunto",
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
+            async with Client(mcp) as c:
+                result = await c.call_tool(
+                    "detalhar_conjunto",
+                    {"conjunto_id": "nao-existe"},
+                )
+                assert "não encontrado" in result.data

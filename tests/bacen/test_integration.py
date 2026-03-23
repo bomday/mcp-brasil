@@ -16,7 +16,7 @@ CLIENT_MODULE = "mcp_brasil.bacen.client"
 
 class TestToolsRegistered:
     @pytest.mark.asyncio
-    async def test_all_8_tools_registered(self) -> None:
+    async def test_all_9_tools_registered(self) -> None:
         async with Client(mcp) as c:
             tool_list = await c.list_tools()
             names = {t.name for t in tool_list}
@@ -29,6 +29,7 @@ class TestToolsRegistered:
                 "indicadores_atuais",
                 "calcular_variacao",
                 "comparar_series",
+                "expectativas_focus",
             }
             assert expected.issubset(names), f"Missing: {expected - names}"
 

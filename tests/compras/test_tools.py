@@ -16,6 +16,12 @@ from mcp_brasil.compras.schemas import (
     ContratacaoResultado,
     Contrato,
     ContratoResultado,
+    Fornecedor,
+    FornecedorResultado,
+    ItemContratacao,
+    ItemResultado,
+    OrgaoContratante,
+    OrgaoResultado,
 )
 
 CLIENT_MODULE = "mcp_brasil.compras.client"
@@ -189,4 +195,168 @@ class TestBuscarAtas:
     async def test_missing_filter_validation(self) -> None:
         ctx = _mock_ctx()
         result = await tools.buscar_atas(ctx)
+        assert "Informe pelo menos um filtro" in result
+
+
+# ---------------------------------------------------------------------------
+# consultar_fornecedor
+# ---------------------------------------------------------------------------
+
+
+class TestConsultarFornecedor:
+    @pytest.mark.asyncio
+    async def test_formats_results(self) -> None:
+        mock_data = FornecedorResultado(
+            total=1,
+            fornecedores=[
+                Fornecedor(
+                    cnpj="12345678000199",
+                    razao_social="Empresa Teste LTDA",
+                    nome_fantasia="Teste Corp",
+                    municipio="São Paulo",
+                    uf="SP",
+                    porte="Médio",
+                    data_abertura="2010-05-20",
+                ),
+            ],
+        )
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.consultar_fornecedor",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.consultar_fornecedor("12345678000199", ctx)
+        assert "Empresa Teste LTDA" in result
+        assert "12345678000199" in result
+        assert "Teste Corp" in result
+        assert "São Paulo" in result
+        assert "SP" in result
+        assert "Médio" in result
+        assert "2010-05-20" in result
+
+    @pytest.mark.asyncio
+    async def test_empty_results(self) -> None:
+        mock_data = FornecedorResultado(total=0, fornecedores=[])
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.consultar_fornecedor",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.consultar_fornecedor("00000000000000", ctx)
+        assert "Nenhum fornecedor encontrado" in result
+        assert "00000000000000" in result
+
+
+# ---------------------------------------------------------------------------
+# buscar_itens
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarItens:
+    @pytest.mark.asyncio
+    async def test_formats_results(self) -> None:
+        mock_data = ItemResultado(
+            total=1,
+            itens=[
+                ItemContratacao(
+                    numero_item=1,
+                    descricao="Computador desktop",
+                    quantidade=50.0,
+                    unidade_medida="UN",
+                    valor_unitario=5000.0,
+                    valor_total=250000.0,
+                    situacao="Homologado",
+                ),
+            ],
+        )
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_itens",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.buscar_itens(ctx, texto="computador")
+        assert "Computador desktop" in result
+        assert "R$ 5.000,00" in result
+        assert "R$ 250.000,00" in result
+        assert "50.0" in result
+        assert "UN" in result
+        assert "Homologado" in result
+        assert "1 itens" in result
+
+    @pytest.mark.asyncio
+    async def test_empty_results(self) -> None:
+        mock_data = ItemResultado(total=0, itens=[])
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_itens",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.buscar_itens(ctx, texto="xyzinexistente")
+        assert "Nenhum item encontrado" in result
+        assert "xyzinexistente" in result
+
+    @pytest.mark.asyncio
+    async def test_missing_filter_validation(self) -> None:
+        ctx = _mock_ctx()
+        result = await tools.buscar_itens(ctx)
+        assert "Informe pelo menos um filtro" in result
+
+
+# ---------------------------------------------------------------------------
+# consultar_orgao
+# ---------------------------------------------------------------------------
+
+
+class TestConsultarOrgao:
+    @pytest.mark.asyncio
+    async def test_formats_results(self) -> None:
+        mock_data = OrgaoResultado(
+            total=1,
+            orgaos=[
+                OrgaoContratante(
+                    cnpj="00394460000141",
+                    razao_social="Ministério da Educação",
+                    esfera="Federal",
+                    poder="Executivo",
+                    uf="DF",
+                    municipio="Brasília",
+                ),
+            ],
+        )
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.consultar_orgao",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.consultar_orgao(ctx, texto="educação")
+        assert "Ministério da Educação" in result
+        assert "00394460000141" in result
+        assert "Federal" in result
+        assert "Executivo" in result
+        assert "DF" in result
+        assert "Brasília" in result
+        assert "1 órgãos" in result
+
+    @pytest.mark.asyncio
+    async def test_empty_results(self) -> None:
+        mock_data = OrgaoResultado(total=0, orgaos=[])
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.consultar_orgao",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.consultar_orgao(ctx, texto="xyzinexistente")
+        assert "Nenhum órgão encontrado" in result
+        assert "xyzinexistente" in result
+
+    @pytest.mark.asyncio
+    async def test_missing_filter_validation(self) -> None:
+        ctx = _mock_ctx()
+        result = await tools.consultar_orgao(ctx)
         assert "Informe pelo menos um filtro" in result

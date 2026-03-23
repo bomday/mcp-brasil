@@ -5,7 +5,7 @@ import pytest
 import respx
 
 from mcp_brasil.diario_oficial import client
-from mcp_brasil.diario_oficial.constants import CITIES_URL, GAZETTES_URL
+from mcp_brasil.diario_oficial.constants import CITIES_URL, EXCERPTS_URL, GAZETTES_URL
 
 # ---------------------------------------------------------------------------
 # buscar_diarios
@@ -101,6 +101,80 @@ class TestBuscarDiarios:
         result = await client.buscar_diarios(querystring="nada")
         assert result.total_gazettes == 0
         assert result.gazettes == []
+
+
+# ---------------------------------------------------------------------------
+# buscar_trechos
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarTrechos:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_excerpts(self) -> None:
+        url = EXCERPTS_URL.format(territory_id="3550308")
+        respx.get(url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "total_excerpts": 1,
+                    "excerpts": [
+                        {
+                            "territory_id": "3550308",
+                            "territory_name": "São Paulo",
+                            "state_code": "SP",
+                            "date": "2024-06-15",
+                            "edition_number": "9876",
+                            "is_extra_edition": False,
+                            "url": "https://example.com/gazette.pdf",
+                            "txt_url": "https://example.com/gazette.txt",
+                            "excerpt": "Contrato firmado",
+                            "subheadline": "Secretaria de Saúde",
+                        }
+                    ],
+                },
+            )
+        )
+        result = await client.buscar_trechos(territory_id="3550308", querystring="contrato")
+        assert result.total_excerpts == 1
+        assert len(result.excerpts) == 1
+        assert result.excerpts[0].territory_name == "São Paulo"
+        assert result.excerpts[0].excerpt == "Contrato firmado"
+        assert result.excerpts[0].subheadline == "Secretaria de Saúde"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_empty_response(self) -> None:
+        url = EXCERPTS_URL.format(territory_id="3550308")
+        respx.get(url).mock(
+            return_value=httpx.Response(
+                200,
+                json={"total_excerpts": 0, "excerpts": []},
+            )
+        )
+        result = await client.buscar_trechos(territory_id="3550308", querystring="nada")
+        assert result.total_excerpts == 0
+        assert result.excerpts == []
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_date_filters_in_params(self) -> None:
+        url = EXCERPTS_URL.format(territory_id="3550308")
+        route = respx.get(url).mock(
+            return_value=httpx.Response(
+                200,
+                json={"total_excerpts": 0, "excerpts": []},
+            )
+        )
+        await client.buscar_trechos(
+            territory_id="3550308",
+            querystring="teste",
+            since="2024-01-01",
+            until="2024-12-31",
+        )
+        req_url = str(route.calls[0].request.url)
+        assert "since=2024-01-01" in req_url
+        assert "until=2024-12-31" in req_url
 
 
 # ---------------------------------------------------------------------------

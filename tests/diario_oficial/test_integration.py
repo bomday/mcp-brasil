@@ -20,12 +20,13 @@ CLIENT_MODULE = "mcp_brasil.diario_oficial.client"
 
 class TestToolsRegistered:
     @pytest.mark.asyncio
-    async def test_all_3_tools_registered(self) -> None:
+    async def test_all_4_tools_registered(self) -> None:
         async with Client(mcp) as c:
             tool_list = await c.list_tools()
             names = {t.name for t in tool_list}
             expected = {
                 "buscar_diarios",
+                "buscar_trechos",
                 "buscar_cidades",
                 "listar_territorios",
             }

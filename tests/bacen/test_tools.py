@@ -349,3 +349,70 @@ class TestCalculateVariation:
 
     def test_no_change(self) -> None:
         assert tools._calculate_variation(100, 100) == 0.0
+
+
+# ---------------------------------------------------------------------------
+# expectativas_focus
+# ---------------------------------------------------------------------------
+
+
+class TestExpectativasFocus:
+    @pytest.mark.asyncio
+    async def test_formats_results(self) -> None:
+        from mcp_brasil.bacen.schemas import ExpectativaFocus
+
+        expectativas = [
+            ExpectativaFocus(
+                indicador="IPCA",
+                data="2024-03-15",
+                data_referencia="2024",
+                media=3.76,
+                mediana=3.75,
+                desvio_padrao=0.18,
+                minimo=2.50,
+                maximo=5.00,
+                base_calculo=80,
+            ),
+            ExpectativaFocus(
+                indicador="IPCA",
+                data="2024-03-08",
+                data_referencia="2024",
+                media=3.80,
+                mediana=3.78,
+                desvio_padrao=0.20,
+                minimo=2.60,
+                maximo=5.10,
+                base_calculo=75,
+            ),
+        ]
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_expectativas_focus",
+            new_callable=AsyncMock,
+            return_value=expectativas,
+        ):
+            result = await tools.expectativas_focus(ctx, indicador="IPCA")
+        assert "Boletim Focus" in result
+        assert "IPCA" in result
+        assert "3,75" in result
+        assert "3,76" in result
+        assert "2024" in result
+        assert "80" in result
+
+    @pytest.mark.asyncio
+    async def test_empty_results(self) -> None:
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_expectativas_focus",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            result = await tools.expectativas_focus(ctx, indicador="IPCA")
+        assert "Nenhuma expectativa encontrada" in result
+
+    @pytest.mark.asyncio
+    async def test_invalid_indicator(self) -> None:
+        ctx = _mock_ctx()
+        result = await tools.expectativas_focus(ctx, indicador="INVALIDO")
+        assert "não disponível" in result
+        assert "IPCA" in result

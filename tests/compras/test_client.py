@@ -5,7 +5,14 @@ import pytest
 import respx
 
 from mcp_brasil.compras import client
-from mcp_brasil.compras.constants import ATAS_URL, CONTRATACOES_URL, CONTRATOS_URL
+from mcp_brasil.compras.constants import (
+    ATAS_URL,
+    CONTRATACOES_URL,
+    CONTRATOS_URL,
+    FORNECEDORES_URL,
+    ITENS_URL,
+    ORGAOS_URL,
+)
 
 # ---------------------------------------------------------------------------
 # buscar_contratacoes
@@ -284,3 +291,245 @@ class TestBuscarAtas:
         assert a.numero_ata == "ATA-001"
         assert a.objeto == "Objeto via campo ata"
         assert a.valor_total == 300000.0
+
+
+# ---------------------------------------------------------------------------
+# consultar_fornecedor
+# ---------------------------------------------------------------------------
+
+
+class TestConsultarFornecedor:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_fornecedor(self) -> None:
+        respx.get(FORNECEDORES_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "totalRegistros": 1,
+                    "data": [
+                        {
+                            "cnpj": "12345678000199",
+                            "razaoSocial": "Empresa Teste LTDA",
+                            "nomeFantasia": "Teste Corp",
+                            "municipio": {"nome": "São Paulo"},
+                            "uf": {"sigla": "SP"},
+                            "porte": "Médio",
+                            "dataAbertura": "2010-05-20",
+                        }
+                    ],
+                },
+            )
+        )
+        result = await client.consultar_fornecedor(cnpj="12345678000199")
+        assert result.total == 1
+        assert len(result.fornecedores) == 1
+        f = result.fornecedores[0]
+        assert f.cnpj == "12345678000199"
+        assert f.razao_social == "Empresa Teste LTDA"
+        assert f.nome_fantasia == "Teste Corp"
+        assert f.municipio == "São Paulo"
+        assert f.uf == "SP"
+        assert f.porte == "Médio"
+        assert f.data_abertura == "2010-05-20"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_empty_response(self) -> None:
+        respx.get(FORNECEDORES_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={"totalRegistros": 0, "data": []},
+            )
+        )
+        result = await client.consultar_fornecedor(cnpj="00000000000000")
+        assert result.total == 0
+        assert result.fornecedores == []
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_fornecedor_fields_fallback(self) -> None:
+        respx.get(FORNECEDORES_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "count": 1,
+                    "resultado": [
+                        {
+                            "cpfCnpj": "99988877000166",
+                            "nomeRazaoSocial": "Fornecedor Alt",
+                            "municipioNome": "Rio de Janeiro",
+                            "ufSigla": "RJ",
+                            "porteEmpresa": "Grande",
+                        }
+                    ],
+                },
+            )
+        )
+        result = await client.consultar_fornecedor(cnpj="99988877000166")
+        f = result.fornecedores[0]
+        assert f.cnpj == "99988877000166"
+        assert f.razao_social == "Fornecedor Alt"
+        assert f.municipio == "Rio de Janeiro"
+        assert f.uf == "RJ"
+        assert f.porte == "Grande"
+
+
+# ---------------------------------------------------------------------------
+# buscar_itens
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarItens:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_itens(self) -> None:
+        respx.get(ITENS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "totalRegistros": 1,
+                    "data": [
+                        {
+                            "numeroItem": 1,
+                            "descricao": "Computador desktop",
+                            "quantidade": 50.0,
+                            "unidadeMedida": "UN",
+                            "valorUnitarioEstimado": 5000.0,
+                            "valorTotal": 250000.0,
+                            "situacaoCompraItemNome": "Homologado",
+                        }
+                    ],
+                },
+            )
+        )
+        result = await client.buscar_itens(query="computador")
+        assert result.total == 1
+        assert len(result.itens) == 1
+        item = result.itens[0]
+        assert item.numero_item == 1
+        assert item.descricao == "Computador desktop"
+        assert item.quantidade == 50.0
+        assert item.unidade_medida == "UN"
+        assert item.valor_unitario == 5000.0
+        assert item.valor_total == 250000.0
+        assert item.situacao == "Homologado"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_empty_response(self) -> None:
+        respx.get(ITENS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={"totalRegistros": 0, "data": []},
+            )
+        )
+        result = await client.buscar_itens(query="inexistente")
+        assert result.total == 0
+        assert result.itens == []
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_item_fields_fallback(self) -> None:
+        respx.get(ITENS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "count": 1,
+                    "resultado": [
+                        {
+                            "numeroItem": 2,
+                            "materialServico": "Monitor LED 24 polegadas",
+                            "quantidade": 100.0,
+                        }
+                    ],
+                },
+            )
+        )
+        result = await client.buscar_itens(query="monitor")
+        item = result.itens[0]
+        assert item.numero_item == 2
+        assert item.descricao == "Monitor LED 24 polegadas"
+        assert item.quantidade == 100.0
+
+
+# ---------------------------------------------------------------------------
+# consultar_orgao
+# ---------------------------------------------------------------------------
+
+
+class TestConsultarOrgao:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_orgaos(self) -> None:
+        respx.get(ORGAOS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "totalRegistros": 1,
+                    "data": [
+                        {
+                            "cnpj": "00394460000141",
+                            "razaoSocial": "Ministério da Educação",
+                            "esferaNome": "Federal",
+                            "poderNome": "Executivo",
+                            "ufSigla": "DF",
+                            "municipioNome": "Brasília",
+                        }
+                    ],
+                },
+            )
+        )
+        result = await client.consultar_orgao(query="educação")
+        assert result.total == 1
+        assert len(result.orgaos) == 1
+        o = result.orgaos[0]
+        assert o.cnpj == "00394460000141"
+        assert o.razao_social == "Ministério da Educação"
+        assert o.esfera == "Federal"
+        assert o.poder == "Executivo"
+        assert o.uf == "DF"
+        assert o.municipio == "Brasília"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_empty_response(self) -> None:
+        respx.get(ORGAOS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={"totalRegistros": 0, "data": []},
+            )
+        )
+        result = await client.consultar_orgao(query="inexistente")
+        assert result.total == 0
+        assert result.orgaos == []
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_orgao_fields_fallback(self) -> None:
+        respx.get(ORGAOS_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "count": 1,
+                    "resultado": [
+                        {
+                            "cnpj": "11111111000100",
+                            "razaoSocial": "Prefeitura Municipal",
+                            "esferaId": "Municipal",
+                            "poderId": "Executivo",
+                            "ufNome": "São Paulo",
+                            "municipioNome": "Campinas",
+                        }
+                    ],
+                },
+            )
+        )
+        result = await client.consultar_orgao(query="prefeitura")
+        o = result.orgaos[0]
+        assert o.cnpj == "11111111000100"
+        assert o.razao_social == "Prefeitura Municipal"
+        assert o.esfera == "Municipal"
+        assert o.poder == "Executivo"
+        assert o.uf == "São Paulo"
+        assert o.municipio == "Campinas"

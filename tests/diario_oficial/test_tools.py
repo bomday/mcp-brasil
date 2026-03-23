@@ -13,6 +13,8 @@ from mcp_brasil.diario_oficial.schemas import (
     CidadeQueridoDiario,
     DiarioOficial,
     DiarioResultado,
+    Excerto,
+    ExcertoResultado,
 )
 
 CLIENT_MODULE = "mcp_brasil.diario_oficial.client"
@@ -117,6 +119,109 @@ class TestBuscarDiarios:
             result = await tools.buscar_diarios("inexistente", ctx)
         assert "Nenhum diário oficial encontrado" in result
         assert "inexistente" in result
+
+
+# ---------------------------------------------------------------------------
+# buscar_trechos
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarTrechos:
+    @pytest.mark.asyncio
+    async def test_formats_results(self) -> None:
+        mock_data = ExcertoResultado(
+            total_excerpts=1,
+            excerpts=[
+                Excerto(
+                    territory_id="3550308",
+                    territory_name="São Paulo",
+                    state_code="SP",
+                    date="2024-06-15",
+                    edition_number="9876",
+                    is_extra_edition=False,
+                    txt_url="https://example.com/excerpt.txt",
+                    excerpt="Contrato de prestação de serviços firmado",
+                    subheadline="Secretaria de Saúde",
+                ),
+            ],
+        )
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_trechos",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.buscar_trechos("3550308", "contrato", ctx)
+        assert "São Paulo" in result
+        assert "SP" in result
+        assert "2024-06-15" in result
+        assert "9876" in result
+        assert "Secretaria de Saúde" in result
+        assert "prestação de serviços" in result
+        assert "Texto completo" in result
+        assert "1 trechos encontrados" in result
+
+    @pytest.mark.asyncio
+    async def test_strips_html_tags(self) -> None:
+        mock_data = ExcertoResultado(
+            total_excerpts=1,
+            excerpts=[
+                Excerto(
+                    territory_id="3550308",
+                    territory_name="São Paulo",
+                    state_code="SP",
+                    excerpt="Trecho com <em>destaque</em> e <b>negrito</b>",
+                ),
+            ],
+        )
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_trechos",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.buscar_trechos("3550308", "destaque", ctx)
+        assert "<em>" not in result
+        assert "<b>" not in result
+        assert "destaque" in result
+        assert "negrito" in result
+
+    @pytest.mark.asyncio
+    async def test_empty_results(self) -> None:
+        mock_data = ExcertoResultado(total_excerpts=0, excerpts=[])
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_trechos",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.buscar_trechos("3550308", "inexistente", ctx)
+        assert "Nenhum trecho encontrado" in result
+        assert "3550308" in result
+
+    @pytest.mark.asyncio
+    async def test_pagination_hint(self) -> None:
+        mock_data = ExcertoResultado(
+            total_excerpts=25,
+            excerpts=[
+                Excerto(
+                    territory_id="3550308",
+                    territory_name="São Paulo",
+                    state_code="SP",
+                    excerpt=f"Trecho {i}",
+                )
+                for i in range(10)
+            ],
+        )
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_trechos",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.buscar_trechos("3550308", "teste", ctx)
+        assert "pagina=1" in result
+        assert "25" in result
 
 
 # ---------------------------------------------------------------------------
