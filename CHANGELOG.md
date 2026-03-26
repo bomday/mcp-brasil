@@ -2,6 +2,42 @@
 
 Todas as mudanças notáveis do mcp-brasil estão documentadas neste arquivo.
 
+## [0.3.1] - 2026-03-26
+
+### Bug Fixes
+
+- **code-mode:** Graceful fallback to BM25 when pydantic-monty missing
+- **pncp:** Rewrite client to match real API spec
+- **.gitignore:** Remove temporary files from Claude directory
+- **batch:** Fix AsyncMock spec for ctx inspection in test
+
+### Build
+
+- **deps:** Add fastmcp[code-mode] extra to dependencies
+- **deps:** Move anthropic to main dependencies
+
+### Documentation
+
+- Rewrite README for public launch and add MIT license
+- **examples:** Add 11 use case guides for different professional contexts
+- **readme:** Update tool count from 205 to 204
+
+### Features
+
+- **batch:** Add executar_lote tool for parallel multi-query execution
+- **planner:** Add planejar_consulta tool with structured execution plans
+
+### Miscellaneous
+
+- Update build config and architecture docs
+- Add logo, update README and gitignore
+- Remove internal files from git tracking
+- Add white logo variant
+
+### Performance
+
+- **tse:** Cache state data in _enrich_candidate_names
+
 ## [0.3.0] - 2026-03-23
 
 ### Bug Fixes
