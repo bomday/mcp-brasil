@@ -318,6 +318,74 @@ class TestListarTerritorios:
 
 
 # ---------------------------------------------------------------------------
+# listar_diarios_recentes
+# ---------------------------------------------------------------------------
+
+
+class TestListarDiariosRecentes:
+    @pytest.mark.asyncio
+    async def test_formats_results(self) -> None:
+        mock_data = DiarioResultado(
+            total_gazettes=2,
+            gazettes=[
+                DiarioOficial(
+                    territory_id="3550308",
+                    territory_name="São Paulo",
+                    state_code="SP",
+                    date="2024-01-15",
+                    edition_number="1234",
+                    is_extra_edition=False,
+                    txt_url="https://example.com/gazette.txt",
+                ),
+                DiarioOficial(
+                    territory_id="3550308",
+                    territory_name="São Paulo",
+                    state_code="SP",
+                    date="2024-01-14",
+                    edition_number="1233",
+                    is_extra_edition=True,
+                ),
+            ],
+        )
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_diarios",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.listar_diarios_recentes(ctx, "3550308")
+        assert "2024-01-15" in result
+        assert "1234" in result
+        assert "(Extra)" in result
+        assert "2 diários recentes" in result
+
+    @pytest.mark.asyncio
+    async def test_empty_results(self) -> None:
+        mock_data = DiarioResultado(total_gazettes=0, gazettes=[])
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_diarios",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.listar_diarios_recentes(ctx, "9999999")
+        assert "Nenhum diário recente" in result
+
+    @pytest.mark.asyncio
+    async def test_passes_descending_date(self) -> None:
+        mock_data = DiarioResultado(total_gazettes=0, gazettes=[])
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_diarios",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ) as mock_client:
+            await tools.listar_diarios_recentes(ctx, "3550308")
+        call_kwargs = mock_client.call_args.kwargs
+        assert call_kwargs["sort_by"] == "descending_date"
+
+
+# ---------------------------------------------------------------------------
 # buscar_diario_unificado
 # ---------------------------------------------------------------------------
 

@@ -188,6 +188,48 @@ async def listar_territorios(ctx: Context) -> str:
     return header + markdown_table(["Código IBGE", "Cidade", "UF"], rows[:100])
 
 
+async def listar_diarios_recentes(
+    ctx: Context,
+    territorio_id: str,
+    data_inicio: str | None = None,
+    data_fim: str | None = None,
+) -> str:
+    """Lista publicações recentes de um município sem termo de busca.
+
+    Retorna os diários oficiais mais recentes de um município específico,
+    sem necessidade de informar um termo de busca. Útil para acompanhar
+    as publicações do dia ou da semana.
+
+    Args:
+        territorio_id: Código IBGE do município (ex: 3550308 para São Paulo).
+        data_inicio: Data inicial YYYY-MM-DD (opcional).
+        data_fim: Data final YYYY-MM-DD (opcional).
+
+    Returns:
+        Lista de diários recentes com data e edição.
+    """
+    await ctx.info(f"Listando diários recentes do território {territorio_id}...")
+    resultado = await client.buscar_diarios(
+        querystring="*",
+        territory_ids=[territorio_id],
+        since=data_inicio,
+        until=data_fim,
+        sort_by="descending_date",
+    )
+    await ctx.info(f"{resultado.total_gazettes} diários encontrados")
+
+    if not resultado.gazettes:
+        return f"Nenhum diário recente encontrado para o território {territorio_id}."
+
+    lines = [f"**Total:** {resultado.total_gazettes} diários recentes\n"]
+    for i, d in enumerate(resultado.gazettes[:10], 1):
+        extra = " (Extra)" if d.is_extra_edition else ""
+        lines.append(f"{i}. **{d.date or 'N/A'}** — Edição {d.edition_number or 'N/A'}{extra}")
+        if d.txt_url:
+            lines.append(f"   [Texto completo]({d.txt_url})")
+    return "\n".join(lines)
+
+
 async def buscar_diario_unificado(
     texto: str,
     ctx: Context,

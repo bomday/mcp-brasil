@@ -17,6 +17,7 @@ from .prompts import (
 from .resources import (
     capitais_cobertas,
     dicas_busca_diario,
+    orgaos_federais_dou,
     secoes_dou,
     tipos_publicacao_dou,
     ufs_com_cobertura,
@@ -26,6 +27,7 @@ from .tools import (
     buscar_diario_unificado,
     buscar_diarios,
     buscar_diarios_regiao,
+    listar_diarios_recentes,
     listar_territorios,
 )
 from .tools_dou import (
@@ -43,6 +45,7 @@ mcp.tool(buscar_diarios, tags={"busca", "diarios-oficiais", "municipal"})
 mcp.tool(buscar_diarios_regiao, tags={"busca", "diarios-oficiais", "regional"})
 mcp.tool(buscar_cidades, tags={"busca", "municipios", "cobertura"})
 mcp.tool(listar_territorios, tags={"listagem", "municipios", "cobertura"})
+mcp.tool(listar_diarios_recentes, tags={"listagem", "diarios-oficiais", "municipal"})
 
 # Tools — DOU Federal (Imprensa Nacional)
 mcp.tool(dou_buscar, tags={"busca", "dou", "federal"})
@@ -60,6 +63,7 @@ mcp.resource("data://ufs-cobertas", mime_type="application/json")(ufs_com_cobert
 mcp.resource("data://dicas-busca", mime_type="application/json")(dicas_busca_diario)
 mcp.resource("data://secoes-dou", mime_type="application/json")(secoes_dou)
 mcp.resource("data://tipos-publicacao-dou", mime_type="application/json")(tipos_publicacao_dou)
+mcp.resource("data://orgaos-federais-dou", mime_type="application/json")(orgaos_federais_dou)
 
 # Prompts — Municipal
 mcp.prompt(investigar_empresa)

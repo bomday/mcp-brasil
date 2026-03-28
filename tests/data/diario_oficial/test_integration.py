@@ -23,7 +23,7 @@ CLIENT_DOU_MODULE = "mcp_brasil.data.diario_oficial.client_dou"
 
 class TestToolsRegistered:
     @pytest.mark.asyncio
-    async def test_all_10_tools_registered(self) -> None:
+    async def test_all_11_tools_registered(self) -> None:
         async with Client(mcp) as c:
             tool_list = await c.list_tools()
             names = {t.name for t in tool_list}
@@ -33,6 +33,7 @@ class TestToolsRegistered:
                 "buscar_diarios_regiao",
                 "buscar_cidades",
                 "listar_territorios",
+                "listar_diarios_recentes",
                 # Federal (DOU)
                 "dou_buscar",
                 "dou_ler_publicacao",
@@ -54,7 +55,7 @@ class TestToolsRegistered:
 
 class TestResourcesRegistered:
     @pytest.mark.asyncio
-    async def test_all_5_resources_registered(self) -> None:
+    async def test_all_6_resources_registered(self) -> None:
         async with Client(mcp) as c:
             resources = await c.list_resources()
             uris = {str(r.uri) for r in resources}
@@ -64,6 +65,7 @@ class TestResourcesRegistered:
                 "data://dicas-busca",
                 "data://secoes-dou",
                 "data://tipos-publicacao-dou",
+                "data://orgaos-federais-dou",
             }
             assert expected.issubset(uris), f"Missing: {expected - uris}"
 

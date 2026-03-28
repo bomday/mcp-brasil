@@ -50,3 +50,28 @@ def secoes_dou() -> str:
 def tipos_publicacao_dou() -> str:
     """Tipos de publicação do DOU (decreto, portaria, lei, etc.)."""
     return json.dumps(DOU_TIPOS_PUBLICACAO, ensure_ascii=False, indent=2)
+
+
+def orgaos_federais_dou() -> str:
+    """Principais órgãos que publicam no DOU com descrição."""
+    orgaos = {
+        "Presidência da República": "Decretos, medidas provisórias, vetos",
+        "Casa Civil": "Atos normativos, regulamentações",
+        "Ministério da Fazenda": "Política fiscal, tributação, câmbio",
+        "Ministério da Saúde": "Portarias sanitárias, ANVISA, ANS",
+        "Ministério da Educação": "Regulação de ensino, INEP, CAPES",
+        "Ministério da Justiça": "Segurança pública, polícia federal",
+        "Ministério do Trabalho": "Normas trabalhistas, CLT",
+        "Ministério do Meio Ambiente": "IBAMA, licenciamento ambiental",
+        "Ministério da Defesa": "Forças armadas, promoções militares",
+        "Ministério de Minas e Energia": "ANP, ANEEL, energia",
+        "Tribunal de Contas da União": "Fiscalização, acórdãos, auditorias",
+        "Conselho Nacional de Justiça": "Regulação do judiciário",
+        "Banco Central do Brasil": "Política monetária, regulação bancária",
+        "ANVISA": "Registro de medicamentos, vigilância sanitária",
+        "ANATEL": "Telecomunicações, radiodifusão",
+        "ANS": "Planos de saúde, operadoras",
+        "IBAMA": "Licenciamento, multas ambientais",
+        "INSS": "Previdência social, benefícios",
+    }
+    return json.dumps(orgaos, ensure_ascii=False, indent=2)
