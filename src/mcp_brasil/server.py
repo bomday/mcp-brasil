@@ -18,11 +18,12 @@ from fastmcp.prompts import PromptResult
 from fastmcp.resources import ResourceResult
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools import ToolResult
+from starlette.responses import JSONResponse
 
 from ._shared.batch import build_dispatch, execute_batch
 from ._shared.feature import FeatureRegistry
 from ._shared.lifespan import http_lifespan
-from .settings import TOOL_SEARCH
+from .settings import MCP_BRASIL_API_TOKEN, TOOL_SEARCH
 
 logging.basicConfig(
     level=logging.INFO,
@@ -70,14 +71,38 @@ class RequestLoggingMiddleware(Middleware):
 
 
 # ---------------------------------------------------------------------------
+# Authentication — conditional on MCP_BRASIL_API_TOKEN
+# ---------------------------------------------------------------------------
+auth = None
+if MCP_BRASIL_API_TOKEN:
+    from fastmcp.server.auth.providers.jwt import StaticTokenVerifier
+
+    auth = StaticTokenVerifier(
+        tokens={
+            MCP_BRASIL_API_TOKEN: {
+                "client_id": "mcp-client",
+                "scopes": ["read"],
+            }
+        }
+    )
+    logger.info("Auth enabled: StaticTokenVerifier (Bearer token required)")
+
+# ---------------------------------------------------------------------------
 # Server setup
 # ---------------------------------------------------------------------------
 
 # Create the root server
-mcp = FastMCP("mcp-brasil 🇧🇷", lifespan=http_lifespan)
+mcp = FastMCP("mcp-brasil 🇧🇷", lifespan=http_lifespan, auth=auth)
 
 # Add middleware
 mcp.add_middleware(RequestLoggingMiddleware())
+
+
+# Health check endpoint (no auth required)
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request: object) -> JSONResponse:
+    return JSONResponse({"status": "healthy"})
+
 
 # Auto-discover and mount all features
 registry = FeatureRegistry()

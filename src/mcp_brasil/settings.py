@@ -24,5 +24,10 @@ USER_AGENT: str = os.environ.get("MCP_BRASIL_USER_AGENT", "mcp-brasil/0.1.0")
 # "none": No transform — all 154+ tools visible at once
 TOOL_SEARCH: str = os.environ.get("MCP_BRASIL_TOOL_SEARCH", "bm25")
 
+# --- Authentication ---
+# When set, requires Authorization: Bearer <token> for HTTP transport.
+# Leave empty/unset for local/stdio usage without auth.
+MCP_BRASIL_API_TOKEN: str | None = os.environ.get("MCP_BRASIL_API_TOKEN") or None
+
 # --- LLM Discovery (recomendar_tools) ---
 ANTHROPIC_API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "")
