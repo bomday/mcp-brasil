@@ -10,9 +10,11 @@ Usage:
 """
 
 import logging
+import pathlib
 import time
 
 import mcp.types as mt
+import starlette.responses
 from fastmcp import Context, FastMCP
 from fastmcp.prompts import PromptResult
 from fastmcp.resources import ResourceResult
@@ -24,7 +26,7 @@ from ._shared.auth import build_auth
 from ._shared.batch import build_dispatch, execute_batch
 from ._shared.feature import FeatureRegistry
 from ._shared.lifespan import http_lifespan
-from .settings import TOOL_SEARCH
+from .settings import MCP_BRASIL_BASE_URL, TOOL_SEARCH
 
 logging.basicConfig(
     level=logging.INFO,
@@ -80,8 +82,20 @@ auth = build_auth()
 # Server setup
 # ---------------------------------------------------------------------------
 
+# Logo path — served at /logo.png for the OAuth consent page
+_LOGO_PATH = pathlib.Path(__file__).parent.parent.parent / "docs" / "assets" / "logo.png"
+
+# Use absolute URL when BASE_URL is set (production), relative path otherwise (local)
+_LOGO_URL = f"{MCP_BRASIL_BASE_URL.rstrip('/')}/logo.png" if MCP_BRASIL_BASE_URL else "/logo.png"
+
 # Create the root server
-mcp = FastMCP("mcp-brasil 🇧🇷", lifespan=http_lifespan, auth=auth)
+mcp = FastMCP(
+    "mcp-brasil 🇧🇷",
+    lifespan=http_lifespan,
+    auth=auth,
+    icons=[mt.Icon(src=_LOGO_URL, mimeType="image/png")],
+    website_url="https://github.com/jxnxts/mcp-brasil",
+)
 
 # Add middleware
 mcp.add_middleware(RequestLoggingMiddleware())
@@ -91,6 +105,18 @@ mcp.add_middleware(RequestLoggingMiddleware())
 @mcp.custom_route("/health", methods=["GET"])
 async def health_check(request: object) -> JSONResponse:
     return JSONResponse({"status": "healthy"})
+
+
+# Serve the logo for the OAuth consent page
+@mcp.custom_route("/logo.png", methods=["GET"])
+async def logo(request: object) -> starlette.responses.Response:
+    if _LOGO_PATH.exists():
+        return starlette.responses.Response(
+            content=_LOGO_PATH.read_bytes(),
+            media_type="image/png",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+    return starlette.responses.Response(status_code=404)
 
 
 # Auto-discover and mount all features

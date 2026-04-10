@@ -11,8 +11,9 @@ COPY pyproject.toml uv.lock README.md ./
 # Install production dependencies only
 RUN uv sync --no-dev --frozen --no-install-project
 
-# Copy source code
+# Copy source code + logo assets
 COPY src/ src/
+COPY docs/assets/logo.png docs/assets/logo.png
 
 # Install the project itself
 RUN uv sync --no-dev --frozen
