@@ -30,7 +30,7 @@ TOOL_SEARCH: str = os.environ.get("MCP_BRASIL_TOOL_SEARCH", "bm25")
 MCP_BRASIL_API_TOKEN: str | None = os.environ.get("MCP_BRASIL_API_TOKEN") or None
 
 # --- Authentication Strategy ---
-# Modes: "none" | "static" | "oauth"
+# Modes: "none" | "static" | "oauth" | "multi"
 # Auto-detect (backward compat): if unset, defaults to "static" when
 # MCP_BRASIL_API_TOKEN is set, else "none".
 _AUTH_MODE_RAW: str = os.environ.get("MCP_BRASIL_AUTH_MODE", "").strip().lower()

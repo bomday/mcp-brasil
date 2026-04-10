@@ -2,7 +2,7 @@
 
 Selects the auth provider based on environment variables:
 
-- ``MCP_BRASIL_AUTH_MODE``: ``none`` | ``static`` | ``oauth``
+- ``MCP_BRASIL_AUTH_MODE``: ``none`` | ``static`` | ``oauth`` | ``multi``
 - ``MCP_BRASIL_OAUTH_PROVIDER``: ``azure`` | ``google`` | ``github`` | ``workos``
 
 Usage::
@@ -50,9 +50,27 @@ def build_auth() -> Any | None:
     if mode == "oauth":
         return _build_oauth()
 
+    if mode == "multi":
+        return _build_multi()
+
     raise AuthConfigError(
-        f"Invalid MCP_BRASIL_AUTH_MODE={mode!r}. Expected one of: none, static, oauth."
+        f"Invalid MCP_BRASIL_AUTH_MODE={mode!r}. Expected one of: none, static, oauth, multi."
     )
+
+
+def _build_multi() -> Any:
+    """Build MultiAuth: OAuth as primary + StaticTokenVerifier as fallback.
+
+    Allows Claude.ai (OAuth/DCR) and Foundry Agent Service (Bearer token)
+    to authenticate simultaneously.
+    """
+    from fastmcp.server.auth import MultiAuth
+
+    oauth_provider = _build_oauth()
+    static_verifier = _build_static_token()
+
+    logger.info("Auth enabled: MultiAuth (OAuth primary + static token fallback)")
+    return MultiAuth(server=oauth_provider, verifiers=[static_verifier])
 
 
 def _build_static_token() -> Any:

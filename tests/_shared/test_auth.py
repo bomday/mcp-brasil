@@ -246,10 +246,53 @@ class TestBuildAuthWorkOS:
             build_auth()
 
 
+class TestBuildAuthMulti:
+    def test_multi_returns_multi_auth(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from fastmcp.server.auth import MultiAuth
+
+        _set_auth_env(
+            monkeypatch,
+            mode="multi",
+            token="my-secret-token",
+            provider="azure",
+            base_url="https://mcp-brasil.example.com",
+            azure_client_id="00000000-0000-0000-0000-000000000001",
+            azure_client_secret="secret-value",
+            azure_tenant_id="00000000-0000-0000-0000-000000000002",
+            azure_required_scopes=["read"],
+        )
+        provider = build_auth()
+        assert isinstance(provider, MultiAuth)
+
+    def test_multi_without_token_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        _set_auth_env(
+            monkeypatch,
+            mode="multi",
+            token=None,
+            provider="azure",
+            base_url="https://mcp-brasil.example.com",
+            azure_client_id="00000000-0000-0000-0000-000000000001",
+            azure_client_secret="secret-value",
+            azure_tenant_id="00000000-0000-0000-0000-000000000002",
+        )
+        with pytest.raises(AuthConfigError, match="MCP_BRASIL_API_TOKEN"):
+            build_auth()
+
+    def test_multi_without_oauth_config_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        _set_auth_env(
+            monkeypatch,
+            mode="multi",
+            token="my-secret-token",
+            provider="",
+        )
+        with pytest.raises(AuthConfigError, match="MCP_BRASIL_OAUTH_PROVIDER"):
+            build_auth()
+
+
 class TestInvalidMode:
     def test_invalid_mode_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _set_auth_env(monkeypatch, mode="invalid")
-        with pytest.raises(AuthConfigError, match="Invalid MCP_BRASIL_AUTH_MODE"):
+        with pytest.raises(AuthConfigError, match=r"Invalid MCP_BRASIL_AUTH_MODE.*multi"):
             build_auth()
 
 
