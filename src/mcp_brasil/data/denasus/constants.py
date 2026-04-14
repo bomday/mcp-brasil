@@ -6,9 +6,12 @@ Source: gov.br/saude/pt-br/composicao/denasus (public pages, Plone CMS).
 
 BASE_URL = "https://www.gov.br/saude/pt-br/composicao/denasus"
 
-ATIVIDADES_URL = f"{BASE_URL}/atividades-de-auditoria"
-RELATORIOS_URL = f"{BASE_URL}/relatorio-anual"
-PLANOS_URL = f"{BASE_URL}/planos-anuais"
+ATIVIDADES_URL = f"{BASE_URL}/criacao-de-atividades-de-auditoria"
+RELATORIOS_URL = f"{BASE_URL}/relatorio-anual-de-auditoria"
+PLANOS_URL = f"{BASE_URL}/planos-anuais-de-auditoria-interna"
+
+# Portal de consulta de auditorias do SUS (sistema externo)
+CONSULTA_AUDITORIA_URL = "https://consultaauditoria.saude.gov.br"
 
 RATE_LIMIT_DELAY = 3.0  # seconds between scraping requests
 

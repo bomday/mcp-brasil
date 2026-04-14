@@ -76,34 +76,74 @@ def _get_link_href(element: Tag) -> str | None:
     return None
 
 
+def _find_content_items(soup: BeautifulSoup) -> tuple[list[Tag], str]:
+    """Find content items from a gov.br page using multiple strategies.
+
+    Returns (items, strategy) where strategy indicates which pattern matched.
+    Current gov.br pages use <h2> headings or <dt> definition lists for
+    document listings inside #content-core.
+    """
+    content = soup.select_one("#content-core, #content, .documentContent")
+
+    # Strategy 1: <h2> with <a> inside content area (most common current pattern)
+    if content and isinstance(content, Tag):
+        h2s = [t for t in content.select("h2") if isinstance(t, Tag) and t.find("a")]
+        if h2s:
+            return h2s, "h2"
+
+    # Strategy 2: <dt> with <a> (definition list pattern)
+    if content and isinstance(content, Tag):
+        dts = [t for t in content.select("dt") if isinstance(t, Tag) and t.find("a")]
+        if dts:
+            return dts, "dt"
+
+    # Strategy 3: fallback — try full page h2/h3 with links
+    headings = [t for t in soup.select("h2, h3") if isinstance(t, Tag) and t.find("a")]
+    if headings:
+        return headings, "h2"
+
+    # Strategy 4: classic Plone CMS selectors (legacy fallback)
+    items = [t for t in soup.select("article, .item-lista, .tileItem") if isinstance(t, Tag)]
+    return items, "legacy"
+
+
 async def listar_atividades_auditoria() -> list[AtividadeAuditoria]:
-    """Scrape audit activities from the DENASUS public page."""
+    """Scrape audit activities from the DENASUS public page.
+
+    The gov.br page structure may vary (Plone CMS updates). We try multiple
+    selector strategies via ``_find_content_items``.
+    """
     soup = await _fetch_page(ATIVIDADES_URL)
     atividades: list[AtividadeAuditoria] = []
-
-    items = soup.select("article, .item-lista, .tileItem, .documentFirstHeading")
+    items, strategy = _find_content_items(soup)
 
     for item in items:
-        if not isinstance(item, Tag):
-            continue
-        titulo_el = item.select_one("h2, h3, .tileHeadline a, a")
+        link = item.find("a") if strategy in ("dt", "h2") else None
+        titulo_el = link if isinstance(link, Tag) else item.select_one("h2, h3, a")
         if not titulo_el:
             continue
         titulo = titulo_el.get_text(strip=True)
         if not titulo:
             continue
 
-        data_el = item.select_one("time, .data, .documentByLine")
-        resumo_el = item.select_one("p, .tileBody, .description")
+        # Look for date/description in sibling elements
+        sibling = item.find_next_sibling()
+        data_text: str | None = None
+        resumo_text: str | None = None
+        if isinstance(sibling, Tag) and sibling.name in ("dd", "p"):
+            text = sibling.get_text(strip=True)
+            date_match = re.search(r"\d{2}/\d{2}/\d{4}", text)
+            data_text = date_match.group() if date_match else None
+            resumo_text = text[:500] if text else None
 
         atividades.append(
             AtividadeAuditoria(
                 titulo=titulo,
-                data=data_el.get_text(strip=True) if data_el else None,
+                data=data_text,
                 uf=_extrair_uf(titulo),
                 tipo=_classificar_tipo(titulo),
                 situacao="Concluída",
-                resumo=resumo_el.get_text(strip=True)[:500] if resumo_el else None,
+                resumo=resumo_text,
                 url_detalhe=_get_link_href(titulo_el),
             )
         )
@@ -112,14 +152,16 @@ async def listar_atividades_auditoria() -> list[AtividadeAuditoria]:
 
 
 async def listar_relatorios_anuais() -> list[RelatorioAnual]:
-    """Scrape annual activity reports from the DENASUS page."""
+    """Scrape annual activity reports from the DENASUS page.
+
+    Current gov.br structure uses <h2> headings with <a> links inside
+    #content-core. Falls back to <dt>, legacy selectors.
+    """
     soup = await _fetch_page(RELATORIOS_URL)
     relatorios: list[RelatorioAnual] = []
+    items, _strategy = _find_content_items(soup)
 
-    items = soup.select("article, .item-lista, .tileItem, li")
     for item in items:
-        if not isinstance(item, Tag):
-            continue
         link = item.find("a")
         if not isinstance(link, Tag):
             continue
@@ -129,12 +171,18 @@ async def listar_relatorios_anuais() -> list[RelatorioAnual]:
         href = str(link.get("href", ""))
         ano = _extrair_ano(titulo)
 
+        # Extract description from sibling <dd> or <p>
+        resumo: str | None = None
+        sibling = item.find_next_sibling()
+        if isinstance(sibling, Tag) and sibling.name in ("dd", "p"):
+            resumo = sibling.get_text(strip=True)[:500]
+
         relatorios.append(
             RelatorioAnual(
                 ano=ano,
                 titulo=titulo,
-                url_pdf=href if href.endswith(".pdf") else None,
-                resumo=None,
+                url_pdf=href or None,
+                resumo=resumo,
             )
         )
 
@@ -142,14 +190,17 @@ async def listar_relatorios_anuais() -> list[RelatorioAnual]:
 
 
 async def listar_planos_auditoria() -> list[PlanoAuditoria]:
-    """Scrape annual audit plans from the DENASUS page."""
+    """Scrape annual audit plans from the DENASUS page.
+
+    Current gov.br structure uses <h2> headings with <a> links (e.g.
+    ``<h2><a href="...">Plano Anual ... 2024</a></h2>``).
+    Falls back to <dt>, legacy selectors.
+    """
     soup = await _fetch_page(PLANOS_URL)
     planos: list[PlanoAuditoria] = []
+    items, _strategy = _find_content_items(soup)
 
-    items = soup.select("article, .item-lista, .tileItem, li")
     for item in items:
-        if not isinstance(item, Tag):
-            continue
         link = item.find("a")
         if not isinstance(link, Tag):
             continue
@@ -163,7 +214,7 @@ async def listar_planos_auditoria() -> list[PlanoAuditoria]:
             PlanoAuditoria(
                 ano=ano,
                 titulo=titulo,
-                url_pdf=href if href.endswith(".pdf") else None,
+                url_pdf=href or None,
             )
         )
 

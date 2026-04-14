@@ -7,25 +7,18 @@ import pytest
 from mcp_brasil.data.denasus import client
 from mcp_brasil.data.denasus.constants import ATIVIDADES_URL, PLANOS_URL, RELATORIOS_URL
 
-# Sample HTML that mimics gov.br Plone CMS structure
+# Sample HTML that mimics current gov.br structure (h2 headings in #content-core)
 SAMPLE_ATIVIDADES_HTML = """
 <html>
 <body>
-<article class="tileItem">
-    <h2 class="tileHeadline"><a href="/detalhe/1">Auditoria no Hospital Regional - BA</a></h2>
-    <time>15/03/2024</time>
-    <p class="tileBody">Verificação de procedimentos no hospital regional.</p>
-</article>
-<article class="tileItem">
-    <h2 class="tileHeadline"><a href="/detalhe/2">Monitoramento SUS - SP</a></h2>
-    <time>20/01/2024</time>
-    <p class="tileBody">Monitoramento de indicadores de saúde.</p>
-</article>
-<article class="tileItem">
-    <h2 class="tileHeadline"><a href="/detalhe/3">Inspeção em Teresina - PI</a></h2>
-    <time>05/06/2024</time>
-    <p class="tileBody">Inspeção em unidades de saúde de Teresina.</p>
-</article>
+<div id="content-core">
+    <h2><a href="/detalhe/1">Auditoria no Hospital Regional - BA</a></h2>
+    <p>Verificação de procedimentos no hospital regional. publicado 15/03/2024</p>
+    <h2><a href="/detalhe/2">Monitoramento SUS - SP</a></h2>
+    <p>Monitoramento de indicadores de saúde. publicado 20/01/2024</p>
+    <h2><a href="/detalhe/3">Inspeção em Teresina - PI</a></h2>
+    <p>Inspeção em unidades de saúde de Teresina. publicado 05/06/2024</p>
+</div>
 </body>
 </html>
 """
@@ -33,11 +26,14 @@ SAMPLE_ATIVIDADES_HTML = """
 SAMPLE_RELATORIOS_HTML = """
 <html>
 <body>
-<ul>
-    <li><a href="/relatorio-2024.pdf">Relatório de Atividades 2024</a></li>
-    <li><a href="/relatorio-2023.pdf">Relatório de Atividades 2023</a></li>
-    <li><a href="/relatorio-2022.pdf">Relatório de Atividades 2022</a></li>
-</ul>
+<div id="content-core">
+    <h2><a href="/relatorio-2024.pdf">Relatório de Atividades 2024</a></h2>
+    <p>Relatório consolidado publicado 15/10/2024 Arquivo</p>
+    <h2><a href="/relatorio-2023.pdf">Relatório de Atividades 2023</a></h2>
+    <p>Relatório consolidado publicado 10/10/2023 Arquivo</p>
+    <h2><a href="/relatorio-2022.pdf">Relatório de Atividades 2022</a></h2>
+    <p>Relatório consolidado publicado 08/10/2022 Arquivo</p>
+</div>
 </body>
 </html>
 """
@@ -45,10 +41,12 @@ SAMPLE_RELATORIOS_HTML = """
 SAMPLE_PLANOS_HTML = """
 <html>
 <body>
-<ul>
-    <li><a href="/plano-2025.pdf">Plano de Auditoria 2025</a></li>
-    <li><a href="/plano-2024.pdf">Plano de Auditoria 2024</a></li>
-</ul>
+<div id="content-core">
+    <h2><a href="/plano-2025.pdf">Plano de Auditoria 2025</a></h2>
+    <p>Departamento Nacional de Auditoria do SUS</p>
+    <h2><a href="/plano-2024.pdf">Plano de Auditoria 2024</a></h2>
+    <p>Departamento Nacional de Auditoria do SUS</p>
+</div>
 </body>
 </html>
 """
